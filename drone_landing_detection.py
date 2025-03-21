@@ -3,12 +3,12 @@ import numpy as np
 import os
 import math
 
-# Parâmetros configuráveis
+# Parâmetros configuráveis.
 PARAMS = {
     'colors': [
         {'name': 'Yellow', 'lower': (20, 100, 100), 'upper': (30, 255, 255)},
         {'name': 'Blue', 'lower': (100, 100, 100), 'upper': (130, 255, 255)},
-        # Adicione mais cores conforme necessário
+        # Adicione mais cores conforme necessário.
     ],
     'canny_threshold1': 100,
     'canny_threshold2': 200,
@@ -19,8 +19,8 @@ PARAMS = {
 def nothing(x):
     pass
 
+# Carrega e pré-processa a imagem (redimensionamento e equalização de histograma).
 def preprocess_image(image_path, max_width=800, max_height=600):
-    # Carregar a imagem
     image = cv2.imread(image_path)
     if image is None:
         print("Erro ao carregar a imagem")
@@ -58,25 +58,26 @@ def adjust_hsv_limits_based_on_histogram(hist_hue, hue_margin = 15):
     
     return lower_hue, upper_hue
 
+# Segmenta cores dentro do intervalo HSV fornecido.
 def segment_colors(hsv, lower, upper):
     return cv2.inRange(hsv, lower, upper)
 
+# Aplica Canny para detecção de bordas na imagem.
 def detect_edges(image, threshold1, threshold2):
-    # Convertendo a imagem para escala de cinza
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Aplicando o Canny para detecção de bordas
     return cv2.Canny(gray, threshold1, threshold2)
 
+# Aplica transformações morfológicas para refinamento das bordas detectadas.
 def morphological_operations(edges, kernel_size):
-    # Definir um kernel para as transformações morfológicas
     kernel = np.ones((kernel_size, kernel_size), np.uint8)
     return cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel)
 
+# Encontra os contornos na imagem processada.
 def detect_contours(edges):
     # Encontrar os contornos na imagem de bordas
     return cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
+# Função para detectar círculos.
 def detect_circular_shape(approx):
     perimeter = cv2.arcLength(approx, True)
     area = cv2.contourArea(approx)
@@ -85,6 +86,7 @@ def detect_circular_shape(approx):
     circularity = 4 * np.pi * (area / (perimeter ** 2))
     return 0.75 < circularity < 1.25
 
+#Função para detectar cruzes.
 def detect_cross(approx):
     angles = []
     for i in range(len(approx)):
@@ -94,6 +96,7 @@ def detect_cross(approx):
         angles.append(angle)
     return sum(80 <= a <= 100 for a in angles) >= 4
 
+# Classifica formas geométricas detectadas com base nos contornos.
 def classify_shapes(contours):
     shapes = []
     
@@ -122,8 +125,8 @@ def classify_shapes(contours):
     
     return shapes
 
+
 def detect_composite_shape(shapes):
-    # Função para detectar formas compostas, com base na proximidade
     composite_shapes = []
     threshold_distance = 100  # Distância máxima para considerar duas formas como parte de uma base
     
@@ -164,6 +167,7 @@ def draw_composite_shapes(image, composite_shapes):
     
     return image_with_composites
 
+# Desenha as formas detectadas na imagem original.
 def draw_shapes(image, shapes):
     image_with_shapes = image.copy()
     for shape, shape_type in shapes:
@@ -175,12 +179,13 @@ def draw_shapes(image, shapes):
     
     return image_with_shapes
 
+# Exibir parâmetros ajustados em tempo real
 def overlay_params(image, params):
-    # Exibir parâmetros ajustados em tempo real
     text = f"Canny Threshold1: {params['Canny Threshold1']} | Canny Threshold2: {params['Canny Threshold2']}"
     cv2.putText(image, text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
     return image
 
+# Detecta quadrados pretos em uma imagem convertida para escala de cinza.
 def detect_black_square(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -200,13 +205,12 @@ def detect_black_square(image):
 
     return black_squares
 
+# Desenhar os quadrados pretos na imagem
 def draw_black_squares(image, black_squares):
-    # Desenhar os quadrados pretos na imagem
     image_with_squares = image.copy()
     
     for square in black_squares:
         cv2.drawContours(image_with_squares, [square], -1, (0, 0, 0), 2)  # Preto
-        # Opcionalmente, podemos desenhar um texto com a identificação
         M = cv2.moments(square)
         if M["m00"] != 0:
             cX, cY = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
@@ -226,6 +230,7 @@ def create_ui():
     ]:
         cv2.createTrackbar(param, "Controle de Parametros", value, max_val, nothing)
 
+# Obtém os valores dos sliders em tempo real.
 def get_slider_values():
     values = {param: cv2.getTrackbarPos(param, "Controle de Parametros") for param in [
         "Canny Threshold1", "Canny Threshold2", "Kernel Size",
@@ -233,7 +238,7 @@ def get_slider_values():
     ]}
     return values
 
-
+# Processa todas as imagens de uma pasta aplicando segmentação e detecção de formas.
 def process_images_in_folder(folder_path):
 
     # Criar a interface de usuário
@@ -274,4 +279,4 @@ def process_images_in_folder(folder_path):
         
     cv2.destroyAllWindows()
 
-process_images_in_folder('C:/Users/cecil/OneDrive/Documentos/EDRA/CHOSEN')
+process_images_in_folder('Digite o caminho da pasta com as imagens:')
